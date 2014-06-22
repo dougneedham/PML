@@ -11,7 +11,10 @@ The goal of this project is to predict the manner of  unilateral dumbbell biceps
 * D: lowering the dumbbell only halfway
 * E: throwing the hips to the front
 
-We are provided a dataset of 19,622 records consisting of 160 variables including classe which is the actual activity performed by a user. We used this dataset to train a model to predict future activities. In order to complete the model, this dataset was separated into a training and test set, where 75% of the records were assigned to the training set. Since there are a large number of variables to create the model with, a Random Forest model was selected because of its ability to handle many variables and high accuracy rate of selecting predictors. After scrubbing the data set to remove variables with high rate of NA values, non-accelerometer variables, and employing cross validation to eliminate highly correlated variables, the resulting model was created using 41 of the original 159 columns. The out-of-bag estimate, which is the estimated error rate for future predictions in the test set was 0.77% and resulted in perfectly predicting the actual test set of 20 records that were submitted for this assignment. However, since Random Forests are prone to overfit the sample, cross validation was employed to gain a more accurate estimate of what the out-of-sample error truly is for this model.
+    After scrubbing the data set to remove variables with high rate of NA values, non-accelerometer variables, and employing cross validation to eliminate highly correlated variables, the resulting model was created using 41 of the original 159 columns.
+    Since there are a large number of variables to create the model with, a Random Forest model was selected because of its ability to handle many variables and high accuracy rate of selecting predictors.
+    The out-of-bag estimate, which is the estimated error rate for future predictions in the test set was 0.77% and resulted in perfectly predicting the actual test set of 20 records that were submitted for this assignment.
+    However, since Random Forests are prone to overfit the sample, cross validation was employed to gain a more accurate estimate of what the out-of-sample error truly is for this model.
 
 #### Load libraries and set working directory
 ```{r setup, results='hide'}
@@ -84,7 +87,7 @@ paste("From ",records,"records, there are",nas,"incomplete records!")
 
 #### Scrub data
 
-Missing data, highly correlated data and any columns with values near zero are removed from the dataset since they add very little predictive value. Since this model is only focused on accelerometer data, other fields that do not measure that type of data have also been eliminated.
+Missing data, highly correlated data and any columns with values near zero are removed from the dataset since they add very little predictive value.
 
 ```{r scrubData,dependson="loadData"}
 
@@ -172,7 +175,7 @@ importance(finMod)
 
 #### Perform cross validation
 
-Since random forests can lead to overfitting, cross validation is used to determine a better estimate the of out of sample error by running the model on smaller subsets of the training dataset. The number of folds was set to 10 for this cross validation exercise with average error printed below. This resulted in projecting an 84% accuracy rate for out-of-bag predictions, which is quite a bit lower than the model's estimation of 99.23%.
+Since random forests can lead to overfitting, cross validation is used to determine a better estimate the of out of sample error by running the model on smaller subsets of the training datasetThis resulted in projecting an 84% accuracy rate for out-of-bag predictions, which is quite a bit lower than the model's estimation of 99.23%.
 
 ```{r crossValidate,dependson=c("loadData","scrubData")}
 # use Random Forest Cross Validation
@@ -197,7 +200,7 @@ mean(result$error.cv)
 
 #### Plots for model
 
-These plots demonstrate the accuracy of the model and the order of importance of the variables used in creating the model.
+These plots the order of importance of the variables used in creating the model  and demonstrate the accuracy of the model.
 
 ```{r plots, dependson=c("loadData","scrubData","crossvalidate")}
 plot(modFit, log="y")
