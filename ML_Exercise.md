@@ -1,20 +1,20 @@
-Pracitcal Machine Learning - Doug Needham
+Practical Machine Learning - Doug Needham
 ===================================================
 # Prediction Exercise 
 ####  Practical Machine Learning Course Project
 ===================================================
 ## Synopsis:
 The goal of this project is to predict the manner of  unilateral dumbbell biceps curls based on data from various accelerometers on the arm,forearm, belt,  and dumbell of 6 participants. The 5 possible methods include -
-* A: exactly according to the specification
-* B: throwing the elbows to the front
-* C: lifting the dumbbell only halfway
-* D: lowering the dumbbell only halfway
-* E: throwing the hips to the front
+* A: Exactly according to specification
+* B: Throwing the elbows to  front
+* C: Lifting the dumbbell only halfway
+* D: Lowering the dumbbell only halfway
+* E: Throwing the hips to the front
 
     After scrubbing the data set to remove variables with high rate of NA values, non-accelerometer variables, and employing cross validation to eliminate highly correlated variables, the resulting model was created using 41 of the original 159 columns.
     Since there are a large number of variables to create the model with, a Random Forest model was selected because of its ability to handle many variables and high accuracy rate of selecting predictors.
     The out-of-bag estimate, which is the estimated error rate for future predictions in the test set was 0.77% and resulted in perfectly predicting the actual test set of 20 records that were submitted for this assignment.
-    However, since Random Forests are prone to overfit the sample, cross validation was employed to gain a more accurate estimate of what the out-of-sample error truly is for this model.
+    However, since Random Forests are prone to over-fit the sample, cross validation was employed to gain a more accurate estimate of what the out-of-sample error truly is for this model.
 
 #### Load libraries and set working directory
 
@@ -437,14 +437,14 @@ finMod
 ##                      Number of trees: 500
 ## No. of variables tried at each split: 21
 ## 
-##         OOB estimate of  error rate: 0.71%
+##         OOB estimate of  error rate: 0.75%
 ## Confusion matrix:
 ##      A    B    C    D    E class.error
-## A 4175    7    1    0    2    0.002389
-## B   15 2824    7    0    2    0.008427
-## C    0   19 2533   15    0    0.013245
-## D    1    0   22 2386    3    0.010779
-## E    0    0    3    7 2696    0.003695
+## A 4177    5    1    0    2    0.001912
+## B   19 2822    7    0    0    0.009129
+## C    0   24 2533   10    0    0.013245
+## D    1    0   27 2381    3    0.012852
+## E    0    0    2   10 2694    0.004435
 ```
 
 ```r
@@ -489,25 +489,25 @@ varImp(modFit)
 ## 
 ##                      Overall
 ## yaw_belt               100.0
-## pitch_forearm           76.8
-## magnet_dumbbell_z       64.9
-## magnet_dumbbell_y       49.4
-## magnet_belt_y           47.6
-## roll_forearm            46.4
-## magnet_belt_z           32.6
-## roll_dumbbell           28.6
-## gyros_belt_z            27.0
-## magnet_dumbbell_x       25.1
-## accel_dumbbell_y        22.6
-## roll_arm                20.7
-## accel_forearm_z         20.6
-## total_accel_dumbbell    17.6
-## accel_forearm_x         17.6
-## magnet_belt_x           17.2
-## accel_dumbbell_z        16.9
-## magnet_forearm_z        16.3
-## yaw_arm                 13.5
-## yaw_dumbbell            13.1
+## pitch_forearm           74.5
+## magnet_dumbbell_z       64.8
+## magnet_belt_y           48.7
+## magnet_dumbbell_y       47.8
+## roll_forearm            47.7
+## magnet_belt_z           31.4
+## gyros_belt_z            26.0
+## magnet_dumbbell_x       23.9
+## roll_dumbbell           23.4
+## accel_dumbbell_y        22.3
+## accel_forearm_x         18.8
+## accel_forearm_z         18.7
+## roll_arm                17.1
+## magnet_belt_x           16.6
+## total_accel_dumbbell    16.0
+## accel_dumbbell_z        15.6
+## magnet_forearm_z        15.0
+## yaw_arm                 13.0
+## yaw_dumbbell            11.5
 ```
 
 ```r
@@ -516,47 +516,47 @@ importance(finMod)
 
 ```
 ##                      MeanDecreaseGini
-## yaw_belt                      1282.60
-## gyros_belt_x                    76.51
-## gyros_belt_y                    84.13
-## gyros_belt_z                   377.55
-## magnet_belt_x                  255.79
-## magnet_belt_y                  633.39
-## magnet_belt_z                  446.89
-## roll_arm                       299.95
-## pitch_arm                      137.25
-## yaw_arm                        209.79
-## total_accel_arm                 71.55
-## gyros_arm_z                     42.89
-## accel_arm_x                    147.03
-## accel_arm_y                    137.81
-## accel_arm_z                     86.52
-## magnet_arm_x                   191.33
-## magnet_arm_y                   143.05
-## magnet_arm_z                   123.66
-## roll_dumbbell                  396.94
-## pitch_dumbbell                 108.97
-## yaw_dumbbell                   205.35
-## total_accel_dumbbell           261.42
-## gyros_dumbbell_y               186.48
-## accel_dumbbell_x               133.73
-## accel_dumbbell_y               323.47
-## accel_dumbbell_z               252.72
-## magnet_dumbbell_x              354.28
-## magnet_dumbbell_y              655.08
-## magnet_dumbbell_z              847.28
-## roll_forearm                   617.77
-## pitch_forearm                  995.08
-## yaw_forearm                    126.69
-## total_accel_forearm             66.36
-## gyros_forearm_x                 47.98
-## gyros_forearm_y                106.22
-## accel_forearm_x                261.21
-## accel_forearm_y                 91.08
-## accel_forearm_z                298.67
-## magnet_forearm_x               141.51
-## magnet_forearm_y               164.66
-## magnet_forearm_z               245.11
+## yaw_belt                      1331.74
+## gyros_belt_x                    76.16
+## gyros_belt_y                    92.09
+## gyros_belt_z                   379.67
+## magnet_belt_x                  258.89
+## magnet_belt_y                  671.76
+## magnet_belt_z                  448.19
+## roll_arm                       264.99
+## pitch_arm                      132.37
+## yaw_arm                        212.00
+## total_accel_arm                 64.19
+## gyros_arm_z                     44.68
+## accel_arm_x                    123.64
+## accel_arm_y                    133.11
+## accel_arm_z                     83.18
+## magnet_arm_x                   169.82
+## magnet_arm_y                   148.44
+## magnet_arm_z                   128.58
+## roll_dumbbell                  345.78
+## pitch_dumbbell                 112.10
+## yaw_dumbbell                   193.28
+## total_accel_dumbbell           251.14
+## gyros_dumbbell_y               186.63
+## accel_dumbbell_x               124.58
+## accel_dumbbell_y               331.28
+## accel_dumbbell_z               245.66
+## magnet_dumbbell_x              352.86
+## magnet_dumbbell_y              660.17
+## magnet_dumbbell_z              879.33
+## roll_forearm                   658.72
+## pitch_forearm                 1004.09
+## yaw_forearm                    122.50
+## total_accel_forearm             76.82
+## gyros_forearm_x                 47.15
+## gyros_forearm_y                 92.65
+## accel_forearm_x                286.75
+## accel_forearm_y                 89.12
+## accel_forearm_z                285.09
+## magnet_forearm_x               140.40
+## magnet_forearm_y               149.02
+## magnet_forearm_z               237.46
 ```
 
 #### Perform cross validation
@@ -578,7 +578,7 @@ with(result,
      )
 ```
 
-![plot of chunk crossValidate](figure/crossValidate.png) 
+![plot of chunk cross.Validate](figure/cross.Validate.png) 
 
 ```r
 # Average OOB estimate of error rate across 10 folds
@@ -586,7 +586,7 @@ mean(result$error.cv)
 ```
 
 ```
-## [1] 0.1608
+## [1] 0.1345
 ```
 
 ```r
@@ -595,7 +595,7 @@ mean(result$error.cv)
 ```
 
 ```
-## [1] 0.8392
+## [1] 0.8655
 ```
 
 #### Plots for model
@@ -628,11 +628,11 @@ table(pred,testing$activity)
 ```
 ##     
 ## pred    A    B    C    D    E
-##    A 1394    4    0    0    0
-##    B    1  944    5    0    0
-##    C    0    0  847    9    0
-##    D    0    0    3  795    5
-##    E    0    1    0    0  896
+##    A 1392    9    0    0    0
+##    B    3  936    9    0    0
+##    C    0    4  841    7    3
+##    D    0    0    5  796    2
+##    E    0    0    0    1  896
 ```
 
 #### Run on real test set for part 2 of assignment
