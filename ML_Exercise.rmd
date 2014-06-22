@@ -40,23 +40,7 @@ pml_write_files = function(x){
 ```
 
 
-========================================================
-
-## Data Processing
-
-Upon loading the raw data, it was discovered that there were many columns that were missing data. Since missing data does not provide any value for making predictions, any column that had more than 90% of missing data were excluded from the data.
-
-This included the variables - amplitude_yaw_belt, amplitude_yaw_dumbbell, amplitude_yaw_forearm, kurtosis_picth_arm, kurtosis_picth_belt, kurtosis_picth_dumbbell, kurtosis_picth_forearm, kurtosis_roll_arm, kurtosis_roll_belt, kurtosis_roll_belt, kurtosis_roll_dumbbell, kurtosis_roll_forearm, kurtosis_yaw_arm, kurtosis_yaw_belt, kurtosis_yaw_dumbbell, kurtosis_yaw_forearm, max_yaw_belt, max_yaw_dumbbell, max_yaw_forearm, min_yaw_belt, min_yaw_dumbbell, skewness_pitch_arm, skewness_pitch_dumbbell, skewness_pitch_forearm, skewness_roll_arm, skewness_roll_belt, skewness_roll_belt.1, skewness_roll_dumbbell, skewness_roll_forearm, skewness_yaw_arm, skewness_yaw_belt, skewness_yaw_dumbbell, and skewness_yaw_forearm.
-
-In addition to these fields,those non-accelerometer measures were also removed from the dataset which included - user_name, raw_timestamp_part_1, raw_timestamp_part_2, cvtd_timestamp, new_window, and num_window.
-
-The remaining variables were also checked to see if they were near zero since that would provide little predictive value, but none were found that needed to be excluded on this basis.
-
-Finally, the data was evaluated to determine if any of the remaining columns were highly correlated to each other which resulted in the elimination of columns - accel_belt_x, accel_belt_y, accel_belt_z, gyros_arm_x, gyros_arm_y, gyros_dumbbell_x, gyros_dumbbell_z, gyros_forearm_z, pitch_belt, roll_belt, and total_accel_belt.
-
-We were left with 41 predictors to build the Random Forest model. All columns removed were evaluated against the Training partition and then removed from both the Training and Test partitions.
-
-More information on this dataset of Qualitative Activity Recognition of Weight Lifting Exercises is available at http://groupware.les.inf.puc-rio.br/har.
+====================================
 
 #### Load data
 ```{r loadData, results='hide'}
@@ -186,8 +170,8 @@ result <- rfcv(training[,2:41], training$activity, cv.fold=10, scale="log", step
 with(result,
      plot(n.var, error.cv, log="x", type="o", lwd=2,
           xlab="Number of Variables",
-          ylab="Error rates (MSEs) at each step",
-          main="Random Cross Validation Error Rate by # of Variables used in Model")
+          ylab="Error rates at each step",
+          main="Random Cross Validation Error Rate by number of Variables used in Model")
      )
 
 # Average OOB estimate of error rate across 10 folds
