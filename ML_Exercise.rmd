@@ -1,0 +1,228 @@
+Pracitcal Machine Learning - Doug Needham
+===================================================
+# Prediction Exercise 
+####  Practical Machine Learning Course Project
+===================================================
+## Synopsis:
+The goal of this project is to predict the manner of  unilateral dumbbell biceps curls based on data from various accelerometers on the arm,forearm, belt,  and dumbell of 6 participants. The 5 possible methods include -
+* A: exactly according to the specification
+* B: throwing the elbows to the front
+* C: lifting the dumbbell only halfway
+* D: lowering the dumbbell only halfway
+* E: throwing the hips to the front
+
+We are provided a dataset of 19,622 records consisting of 160 variables including classe which is the actual activity performed by a user. We used this dataset to train a model to predict future activities. In order to complete the model, this dataset was separated into a training and test set, where 75% of the records were assigned to the training set. Since there are a large number of variables to create the model with, a Random Forest model was selected because of its ability to handle many variables and high accuracy rate of selecting predictors. After scrubbing the data set to remove variables with high rate of NA values, non-accelerometer variables, and employing cross validation to eliminate highly correlated variables, the resulting model was created using 41 of the original 159 columns. The out-of-bag estimate, which is the estimated error rate for future predictions in the test set was 0.77% and resulted in perfectly predicting the actual test set of 20 records that were submitted for this assignment. However, since Random Forests are prone to overfit the sample, cross validation was employed to gain a more accurate estimate of what the out-of-sample error truly is for this model.
+
+#### Load libraries and set working directory
+```{r setup, results='hide'}
+# getwd()
+setwd("~/Coursera_DataScience/ML")
+library(Hmisc)
+library(AppliedPredictiveModeling)
+library(randomForest)
+library(ggplot2)
+library(caret)
+```
+
+```{r functions, echo=FALSE}
+# output test set answers to individual files
+pml_write_files = function(x){
+  n = length(x)
+  dir <- "./answers2/"
+  for(i in 1:n){
+    filename = paste0("problem_id_",i,".txt")
+    write.table(x[i],file=paste0(dir,filename),quote=FALSE,row.names=FALSE,col.names=FALSE)
+  }
+}
+```
+
+
+========================================================
+
+## Data Processing
+
+Upon loading the raw data, it was discovered that there were many columns that were missing data. Since missing data does not provide any value for making predictions, any column that had more than 90% of missing data were excluded from the data.
+
+This included the variables - amplitude_yaw_belt, amplitude_yaw_dumbbell, amplitude_yaw_forearm, kurtosis_picth_arm, kurtosis_picth_belt, kurtosis_picth_dumbbell, kurtosis_picth_forearm, kurtosis_roll_arm, kurtosis_roll_belt, kurtosis_roll_belt, kurtosis_roll_dumbbell, kurtosis_roll_forearm, kurtosis_yaw_arm, kurtosis_yaw_belt, kurtosis_yaw_dumbbell, kurtosis_yaw_forearm, max_yaw_belt, max_yaw_dumbbell, max_yaw_forearm, min_yaw_belt, min_yaw_dumbbell, skewness_pitch_arm, skewness_pitch_dumbbell, skewness_pitch_forearm, skewness_roll_arm, skewness_roll_belt, skewness_roll_belt.1, skewness_roll_dumbbell, skewness_roll_forearm, skewness_yaw_arm, skewness_yaw_belt, skewness_yaw_dumbbell, and skewness_yaw_forearm.
+
+In addition to these fields,those non-accelerometer measures were also removed from the dataset which included - user_name, raw_timestamp_part_1, raw_timestamp_part_2, cvtd_timestamp, new_window, and num_window.
+
+The remaining variables were also checked to see if they were near zero since that would provide little predictive value, but none were found that needed to be excluded on this basis.
+
+Finally, the data was evaluated to determine if any of the remaining columns were highly correlated to each other which resulted in the elimination of columns - accel_belt_x, accel_belt_y, accel_belt_z, gyros_arm_x, gyros_arm_y, gyros_dumbbell_x, gyros_dumbbell_z, gyros_forearm_z, pitch_belt, roll_belt, and total_accel_belt.
+
+We were left with 41 predictors to build the Random Forest model. All columns removed were evaluated against the Training partition and then removed from both the Training and Test partitions.
+
+More information on this dataset of Qualitative Activity Recognition of Weight Lifting Exercises is available at http://groupware.les.inf.puc-rio.br/har.
+
+#### Load data
+```{r loadData, results='hide'}
+trainDataFile <- "pml-training.csv"
+testDataFile <- "pml-testing.csv"
+
+init <- read.csv(trainDataFile, header = TRUE, nrows = 10000, stringsAsFactors = FALSE, na.strings = "NA", quote="")
+classes <- sapply(init,class)
+rawTrain <- read.csv(trainDataFile, colClasses=classes, header = TRUE)
+rawTest <- read.csv(testDataFile, colClasses=classes, header = TRUE)
+
+```
+
+#### Display the structure of the data
+```{r viewSummaryRawData, dependson="loadData", echo=FALSE}
+str(rawTrain)
+```
+
+#### missing values
+
+Check for NA's because they can cause issues with models.
+
+```{r viewMissingData, dependson="loadData"}
+nas <- format(sum(is.na(rawTrain)),big.mark=",",scientific=FALSE)
+records <- format(nrow(rawTrain),big.mark=",",scientific=FALSE)
+paste("From ",records,"records, there are",nas,"incomplete records!")
+```
+
+#### Scrub data
+
+Missing data, highly correlated data and any columns with values near zero are removed from the dataset since they add very little predictive value. Since this model is only focused on accelerometer data, other fields that do not measure that type of data have also been eliminated.
+
+```{r scrubData,dependson="loadData"}
+
+# remove unnecessary fields, and create new dataframe for transformations starting with classe column and non-accelerometer variables
+tidy.df <- rawTrain[,c(160,8:159)]
+
+# adding activity as factor variable of classe, and then excluding classe
+tidy.df$activity <- factor(tidy.df$classe)
+
+# now discarding classe character variable and putting factor activity in first column
+tidy.df <- tidy.df[,c(154,2:153)]
+
+# likewise removing non-accelerometer and also problem_id columns from Test set
+tidy.dfTest <- rawTest[,c(8:159)]
+
+# some of the measurements did not contain NA in data file so were converted to character.
+maxNas <- .9*nrow(tidy.df[,])
+for(col in names(tidy.df)){
+  if(is.character(tidy.df[,col])==TRUE
+    && col %in% c("user_name","cvtd_timestamp","new_window","classe") == FALSE
+     ){
+    # Finding those and changing back to numeric.
+    tidy.df[,col] <- as.numeric(tidy.df[,col])
+    tidy.dfTest[,col] <- as.numeric(tidy.dfTest[,col])
+  }
+  # Also, remove any cols that are mostly NA altogether since not very useful for prediction
+  rowNas <- sum(is.na(tidy.df[,col]))
+  if(rowNas > maxNas){
+    tidy.df <- tidy.df[,-which(names(tidy.df) %in% c(col))]
+    tidy.dfTest <- tidy.dfTest[,-which(names(tidy.dfTest) %in% c(col))]
+  }
+}
+
+# remove near zero values, if any
+nsv <- nearZeroVar(tidy.df[,2:53],saveMetrics=TRUE)
+# check if any are TRUE, which none are
+nsv[,nsv$nzv==TRUE]
+
+# check for highly correlated predictors and remove those columns from both sets
+M = abs(cor(tidy.df[,2:53]))
+diag(M) <- 0
+corPreds <- which(M > 0.9,arr.ind=TRUE)
+for(col in unique(row.names(corPreds))){
+  tidy.df <- tidy.df[,-which(names(tidy.df) %in% c(col))]
+  tidy.dfTest <- tidy.dfTest[,-which(names(tidy.dfTest) %in% c(col))]
+}
+
+
+summary(tidy.df)
+# data should be good enough now but will check NAs one more time
+```
+
+#### Check for missing values on tidied dataset
+```{r viewMissingScrubbedData, dependson="loadData"}
+nas <- format(sum(is.na(tidy.df)),big.mark=",",scientific=FALSE)
+records <- format(nrow(tidy.df),big.mark=",",scientific=FALSE)
+paste("Of",records,"records, there are",nas,"incomplete records!")
+```
+
+#### Build random forest model on all accelerometer variables
+
+The random forest model was selected because of its high accuracy rate and ability to drill down into many variables in order to identify which ones contribute most to a prediction algorithm. This resulting out-of-bag estimate of error rate was 0.77%.
+
+```{r rfmodel, dependson="scrubData"}
+
+
+# split Training into train/test sets
+in.Train = createDataPartition(tidy.df$activity, p = 3/4, list=FALSE)
+training = tidy.df[in.Train,]
+testing = tidy.df[-in.Train,]
+
+# use Random Forest model due to more than 2 outcome variables
+modFit <- train(activity ~.,method="rf", data=training)
+finMod <- modFit$finalModel
+finMod
+
+summary(finMod)
+
+# view Importance of each variable
+varImp(modFit)
+importance(finMod)
+
+
+```
+
+#### Perform cross validation
+
+Since random forests can lead to overfitting, cross validation is used to determine a better estimate the of out of sample error by running the model on smaller subsets of the training dataset. The number of folds was set to 10 for this cross validation exercise with average error printed below. This resulted in projecting an 84% accuracy rate for out-of-bag predictions, which is quite a bit lower than the model's estimation of 99.23%.
+
+```{r crossValidate,dependson=c("loadData","scrubData")}
+# use Random Forest Cross Validation
+result <- rfcv(training[,2:41], training$activity, cv.fold=10, scale="log", step=0.5,
+     mtry=function(p) max(1, floor(sqrt(p))), recursive=FALSE)
+
+# Plot of cross validation error results
+with(result,
+     plot(n.var, error.cv, log="x", type="o", lwd=2,
+          xlab="Number of Variables",
+          ylab="Error rates (MSEs) at each step",
+          main="Random Cross Validation Error Rate by # of Variables used in Model")
+     )
+
+# Average OOB estimate of error rate across 10 folds
+mean(result$error.cv)
+# Estimate OOB Accuracy rate based on cross validation
+1-mean(result$error.cv)
+
+
+```
+
+#### Plots for model
+
+These plots demonstrate the accuracy of the model and the order of importance of the variables used in creating the model.
+
+```{r plots, dependson=c("loadData","scrubData","crossvalidate")}
+plot(modFit, log="y")
+varImpPlot(finMod)
+```
+
+#### Run on test partition set to compare actual vs prediction
+```{r trainingSet, dependson=c("loadData","scrubData","crossvalidate")}
+pred <- as.character(predict(modFit,testing))
+# cbind(as.character(testing$activity),pred)
+testing$predRight <- pred==testing$activity
+# results on the testing set
+table(pred,testing$activity)
+```
+
+#### Run on real test set for part 2 of assignment
+```{r testSet, dependson=c("loadData","scrubData","trainingSet","crossValidate")}
+# run on test
+predTest <- as.character(predict(modFit,tidy.dfTest))
+predTest
+tidy.dfTestPred <- cbind(activity=predTest,tidy.dfTest)
+tidy.dfTestPred
+```
+
+```{r writePredictions}
+# write answers out to submit project predictions of test set
+pml_write_files(predTest)
+```
