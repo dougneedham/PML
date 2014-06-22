@@ -1,20 +1,20 @@
-Pracitcal Machine Learning - Doug Needham
+Practical Machine Learning - Doug Needham
 ===================================================
 # Prediction Exercise 
 ####  Practical Machine Learning Course Project
 ===================================================
 ## Synopsis:
 The goal of this project is to predict the manner of  unilateral dumbbell biceps curls based on data from various accelerometers on the arm,forearm, belt,  and dumbell of 6 participants. The 5 possible methods include -
-* A: exactly according to the specification
-* B: throwing the elbows to the front
-* C: lifting the dumbbell only halfway
-* D: lowering the dumbbell only halfway
-* E: throwing the hips to the front
+* A: Exactly according to specification
+* B: Throwing the elbows to  front
+* C: Lifting the dumbbell only halfway
+* D: Lowering the dumbbell only halfway
+* E: Throwing the hips to the front
 
     After scrubbing the data set to remove variables with high rate of NA values, non-accelerometer variables, and employing cross validation to eliminate highly correlated variables, the resulting model was created using 41 of the original 159 columns.
     Since there are a large number of variables to create the model with, a Random Forest model was selected because of its ability to handle many variables and high accuracy rate of selecting predictors.
     The out-of-bag estimate, which is the estimated error rate for future predictions in the test set was 0.77% and resulted in perfectly predicting the actual test set of 20 records that were submitted for this assignment.
-    However, since Random Forests are prone to overfit the sample, cross validation was employed to gain a more accurate estimate of what the out-of-sample error truly is for this model.
+    However, since Random Forests are prone to over-fit the sample, cross validation was employed to gain a more accurate estimate of what the out-of-sample error truly is for this model.
 
 #### Load libraries and set working directory
 ```{r setup, results='hide'}
@@ -43,7 +43,7 @@ pml_write_files = function(x){
 ====================================
 
 #### Load data
-```{r loadData, results='hide'}
+```{r load.Data, results='hide'}
 trainDataFile <- "pml-training.csv"
 testDataFile <- "pml-testing.csv"
 
@@ -55,7 +55,7 @@ rawTest <- read.csv(testDataFile, colClasses=classes, header = TRUE)
 ```
 
 #### Display the structure of the data
-```{r viewSummaryRawData, dependson="loadData", echo=FALSE}
+```{r viewSummaryRawData, dependson="load.Data", echo=FALSE}
 str(rawTrain)
 ```
 
@@ -63,7 +63,7 @@ str(rawTrain)
 
 Check for NA's because they can cause issues with models.
 
-```{r viewMissingData, dependson="loadData"}
+```{r viewMissingData, dependson="load.Data"}
 nas <- format(sum(is.na(rawTrain)),big.mark=",",scientific=FALSE)
 records <- format(nrow(rawTrain),big.mark=",",scientific=FALSE)
 paste("From ",records,"records, there are",nas,"incomplete records!")
@@ -73,7 +73,7 @@ paste("From ",records,"records, there are",nas,"incomplete records!")
 
 Missing data, highly correlated data and any columns with values near zero are removed from the dataset since they add very little predictive value.
 
-```{r scrubData,dependson="loadData"}
+```{r scrub.Data,dependson="load.Data"}
 
 # remove unnecessary fields, and create new dataframe for transformations starting with classe column and non-accelerometer variables
 tidy.df <- rawTrain[,c(160,8:159)]
@@ -125,7 +125,7 @@ summary(tidy.df)
 ```
 
 #### Check for missing values on tidied dataset
-```{r viewMissingScrubbedData, dependson="loadData"}
+```{r viewMissingScrubbedData, dependson="load.Data"}
 nas <- format(sum(is.na(tidy.df)),big.mark=",",scientific=FALSE)
 records <- format(nrow(tidy.df),big.mark=",",scientific=FALSE)
 paste("Of",records,"records, there are",nas,"incomplete records!")
@@ -135,7 +135,7 @@ paste("Of",records,"records, there are",nas,"incomplete records!")
 
 The random forest model was selected because of its high accuracy rate and ability to drill down into many variables in order to identify which ones contribute most to a prediction algorithm. This resulting out-of-bag estimate of error rate was 0.77%.
 
-```{r rfmodel, dependson="scrubData"}
+```{r rfmodel, dependson="scrub.Data"}
 
 
 # split Training into train/test sets
@@ -161,7 +161,7 @@ importance(finMod)
 
 Since random forests can lead to overfitting, cross validation is used to determine a better estimate the of out of sample error by running the model on smaller subsets of the training datasetThis resulted in projecting an 84% accuracy rate for out-of-bag predictions, which is quite a bit lower than the model's estimation of 99.23%.
 
-```{r crossValidate,dependson=c("loadData","scrubData")}
+```{r cross.Validate,dependson=c("load.Data","scrub.Data")}
 # use Random Forest Cross Validation
 result <- rfcv(training[,2:41], training$activity, cv.fold=10, scale="log", step=0.5,
      mtry=function(p) max(1, floor(sqrt(p))), recursive=FALSE)
@@ -186,13 +186,13 @@ mean(result$error.cv)
 
 These plots the order of importance of the variables used in creating the model  and demonstrate the accuracy of the model.
 
-```{r plots, dependson=c("loadData","scrubData","crossvalidate")}
+```{r plots, dependson=c("load.Data","scrub.Data","cross.Validate")}
 plot(modFit, log="y")
 varImpPlot(finMod)
 ```
 
 #### Run on test partition set to compare actual vs prediction
-```{r trainingSet, dependson=c("loadData","scrubData","crossvalidate")}
+```{r training.Set, dependson=c("load.Data","scrub.Data","cross.Validate")}
 pred <- as.character(predict(modFit,testing))
 # cbind(as.character(testing$activity),pred)
 testing$predRight <- pred==testing$activity
@@ -201,7 +201,7 @@ table(pred,testing$activity)
 ```
 
 #### Run on real test set for part 2 of assignment
-```{r testSet, dependson=c("loadData","scrubData","trainingSet","crossValidate")}
+```{r testSet, dependson=c("load.Data","scrub.Data","training.Set","cross.Validate")}
 # run on test
 predTest <- as.character(predict(modFit,tidy.dfTest))
 predTest
