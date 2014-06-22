@@ -3,7 +3,7 @@ Practical Machine Learning - Doug Needham
 # Prediction Exercise 
 ####  Practical Machine Learning Course Project
 ===================================================
-## Synopsis:
+## Astract:
 The goal of this project is to predict the manner of  unilateral dumbbell biceps curls based on data from various accelerometers on the arm,forearm, belt,  and dumbell of 6 participants. The 5 possible methods include -
 * A: Exactly according to specification
 * B: Throwing the elbows to  front
@@ -11,14 +11,12 @@ The goal of this project is to predict the manner of  unilateral dumbbell biceps
 * D: Lowering the dumbbell only halfway
 * E: Throwing the hips to the front
 
-    After scrubbing the data set to remove variables with high rate of NA values, non-accelerometer variables, and employing cross validation to eliminate highly correlated variables, the resulting model was created using 41 of the original 159 columns.
+    After scrubbing the data set to remove variables with high rate of NA values, non-accelerometer variables, and employing cross validation to eliminate highly correlated variables, the results model was created using 41 of the original 159 columns.
     Since there are a large number of variables to create the model with, a Random Forest model was selected because of its ability to handle many variables and high accuracy rate of selecting predictors.
     The out-of-bag estimate, which is the estimated error rate for future predictions in the test set was 0.77% and resulted in perfectly predicting the actual test set of 20 records that were submitted for this assignment.
     However, since Random Forests are prone to over-fit the sample, cross validation was employed to gain a more accurate estimate of what the out-of-sample error truly is for this model.
-
 #### Load libraries and set working directory
-```{r setup, results='hide'}
-# getwd()
+```{r Setup, results='hide'}
 setwd("~/Coursera_DataScience/ML")
 library(Hmisc)
 library(AppliedPredictiveModeling)
@@ -26,20 +24,17 @@ library(randomForest)
 library(ggplot2)
 library(caret)
 ```
-
-```{r functions, echo=FALSE}
+```{r Submission.Code, echo=FALSE}
 # output test set answers to individual files
 pml_write_files = function(x){
   n = length(x)
-  dir <- "./answers2/"
+  dir <- "./answers/"
   for(i in 1:n){
     filename = paste0("problem_id_",i,".txt")
     write.table(x[i],file=paste0(dir,filename),quote=FALSE,row.names=FALSE,col.names=FALSE)
   }
 }
 ```
-
-
 ====================================
 
 #### Load data
@@ -49,14 +44,13 @@ testDataFile <- "pml-testing.csv"
 
 init <- read.csv(trainDataFile, header = TRUE, nrows = 10000, stringsAsFactors = FALSE, na.strings = "NA", quote="")
 classes <- sapply(init,class)
-rawTrain <- read.csv(trainDataFile, colClasses=classes, header = TRUE)
-rawTest <- read.csv(testDataFile, colClasses=classes, header = TRUE)
+raw.Train <- read.csv(trainDataFile, colClasses=classes, header = TRUE)
+raw.Test <- read.csv(testDataFile, colClasses=classes, header = TRUE)
 
 ```
-
 #### Display the structure of the data
 ```{r viewSummaryRawData, dependson="load.Data", echo=FALSE}
-str(rawTrain)
+str(raw.Train)
 ```
 
 #### missing values
@@ -64,40 +58,38 @@ str(rawTrain)
 Check for NA's because they can cause issues with models.
 
 ```{r viewMissingData, dependson="load.Data"}
-nas <- format(sum(is.na(rawTrain)),big.mark=",",scientific=FALSE)
-records <- format(nrow(rawTrain),big.mark=",",scientific=FALSE)
+nas <- format(sum(is.na(raw.Train)),big.mark=",",scientific=FALSE)
+records <- format(nrow(raw.Train),big.mark=",",scientific=FALSE)
 paste("From ",records,"records, there are",nas,"incomplete records!")
 ```
 
-#### Scrub data
+#### Scrub the data
 
 Missing data, highly correlated data and any columns with values near zero are removed from the dataset since they add very little predictive value.
 
 ```{r scrub.Data,dependson="load.Data"}
 
 # remove unnecessary fields, and create new dataframe for transformations starting with classe column and non-accelerometer variables
-tidy.df <- rawTrain[,c(160,8:159)]
+tidy.df <- raw.Train[,c(160,8:159)]
 
-# adding activity as factor variable of classe, and then excluding classe
+# creating activity as factor variable of classe, and then excluding classe
 tidy.df$activity <- factor(tidy.df$classe)
 
-# now discarding classe character variable and putting factor activity in first column
+# rearranging columns to discard classe character variable and put factor activity in first column
 tidy.df <- tidy.df[,c(154,2:153)]
 
-# likewise removing non-accelerometer and also problem_id columns from Test set
-tidy.dfTest <- rawTest[,c(8:159)]
+# likewise removing un-needed columns
+tidy.dfTest <- raw.Test[,c(8:159)]
 
-# some of the measurements did not contain NA in data file so were converted to character.
+# some of the measurements did not contain NA in data file and were converted to character.
 maxNas <- .9*nrow(tidy.df[,])
 for(col in names(tidy.df)){
-  if(is.character(tidy.df[,col])==TRUE
-    && col %in% c("user_name","cvtd_timestamp","new_window","classe") == FALSE
-     ){
-    # Finding those and changing back to numeric.
+  if(is.character(tidy.df[,col])==TRUE && col %in% c("user_name","cvtd_timestamp","new_window","classe") == FALSE){
+    # Find and change back to numeric.
     tidy.df[,col] <- as.numeric(tidy.df[,col])
     tidy.dfTest[,col] <- as.numeric(tidy.dfTest[,col])
   }
-  # Also, remove any cols that are mostly NA altogether since not very useful for prediction
+  # Remove any cols that are mostly NA altogether.
   rowNas <- sum(is.na(tidy.df[,col]))
   if(rowNas > maxNas){
     tidy.df <- tidy.df[,-which(names(tidy.df) %in% c(col))]
@@ -107,109 +99,107 @@ for(col in names(tidy.df)){
 
 # remove near zero values, if any
 nsv <- nearZeroVar(tidy.df[,2:53],saveMetrics=TRUE)
-# check if any are TRUE, which none are
+#
 nsv[,nsv$nzv==TRUE]
-
-# check for highly correlated predictors and remove those columns from both sets
+# check for highly correlated predictors, then remove those columns from both sets
 M = abs(cor(tidy.df[,2:53]))
 diag(M) <- 0
-corPreds <- which(M > 0.9,arr.ind=TRUE)
-for(col in unique(row.names(corPreds))){
+cor.Preds <- which(M > 0.9,arr.ind=TRUE)
+for(col in unique(row.names(cor.Preds))){
   tidy.df <- tidy.df[,-which(names(tidy.df) %in% c(col))]
   tidy.dfTest <- tidy.dfTest[,-which(names(tidy.dfTest) %in% c(col))]
 }
-
-
 summary(tidy.df)
-# data should be good enough now but will check NAs one more time
+# data should be good enough now 
 ```
 
-#### Check for missing values on tidied dataset
+#### Check for missing values 
 ```{r viewMissingScrubbedData, dependson="load.Data"}
 nas <- format(sum(is.na(tidy.df)),big.mark=",",scientific=FALSE)
 records <- format(nrow(tidy.df),big.mark=",",scientific=FALSE)
-paste("Of",records,"records, there are",nas,"incomplete records!")
+paste("For ",records,"records, there are",nas,"incomplete records!")
 ```
 
-#### Build random forest model on all accelerometer variables
+#### Build random forest model on all variables
 
-The random forest model was selected because of its high accuracy rate and ability to drill down into many variables in order to identify which ones contribute most to a prediction algorithm. This resulting out-of-bag estimate of error rate was 0.77%.
+The random forest model was selected because of its high accuracy rate. It also has the ability to drill down into many variables toidentify which ones contribute most to a prediction algorithm. 
+This resulting out-of-bag estimate of error rate was 0.77%.
 
 ```{r rfmodel, dependson="scrub.Data"}
-
-
-# split Training into train/test sets
+# split into train/test sets
 in.Train = createDataPartition(tidy.df$activity, p = 3/4, list=FALSE)
 training = tidy.df[in.Train,]
 testing = tidy.df[-in.Train,]
 
-# use Random Forest model due to more than 2 outcome variables
-modFit <- train(activity ~.,method="rf", data=training)
-finMod <- modFit$finalModel
-finMod
+# use Random Forest model since we have more than 2 outcome variables
+mod.Fit <- train(activity ~.,method="rf", data=training)
+fin.Mod <- mod.Fit$finalModel
+fin.Mod
 
-summary(finMod)
+summary(fin.Mod)
 
-# view Importance of each variable
-varImp(modFit)
-importance(finMod)
+# view each variable
+varImp(mod.Fit)
+importance(fin.Mod)
 
 
 ```
-
-#### Perform cross validation
-
+#### Perform crossval
 Since random forests can lead to overfitting, cross validation is used to determine a better estimate the of out of sample error by running the model on smaller subsets of the training datasetThis resulted in projecting an 84% accuracy rate for out-of-bag predictions, which is quite a bit lower than the model's estimation of 99.23%.
-
 ```{r cross.Validate,dependson=c("load.Data","scrub.Data")}
-# use Random Forest Cross Validation
-result <- rfcv(training[,2:41], training$activity, cv.fold=10, scale="log", step=0.5,
-     mtry=function(p) max(1, floor(sqrt(p))), recursive=FALSE)
+# use RF Cross Validation
+rfcv.result <- rfcv(training[,2:41], 
+			training$activity, 
+			cv.fold=10, 
+			scale="log", 
+			step=0.5,
+			mtry=function(p) max(1, floor(sqrt(p))), 
+			recursive=FALSE)
 
-# Plot of cross validation error results
-with(result,
-     plot(n.var, error.cv, log="x", type="o", lwd=2,
-          xlab="Number of Variables",
-          ylab="Error rates at each step",
-          main="Random Cross Validation Error Rate by number of Variables used in Model")
+# Plot of crossval error results
+with(rfcv.result,
+     plot(n.var, 
+			error.cv, 
+			log="x", 
+			type="o", 
+			lwd=2,
+            xlab="Variables",
+            ylab="Error rates for each step",
+            main="Random Cross Validation Error Rate by number of Variables used")
      )
 
-# Average OOB estimate of error rate across 10 folds
-mean(result$error.cv)
-# Estimate OOB Accuracy rate based on cross validation
-1-mean(result$error.cv)
-
-
+# mean estimate of error rate across 10 folds
+mean(rfcv.result$error.cv)
+# Estimate OOB Accuracy rate from crossval
+1-mean(rfcv.result$error.cv)
 ```
 
-#### Plots for model
-
+#### Plots 
 These plots the order of importance of the variables used in creating the model  and demonstrate the accuracy of the model.
 
 ```{r plots, dependson=c("load.Data","scrub.Data","cross.Validate")}
-plot(modFit, log="y")
-varImpPlot(finMod)
+plot(mod.Fit, log="y")
+varImpPlot(fin.Mod)
 ```
 
-#### Run on test partition set to compare actual vs prediction
+#### Run on the test partition set for comparison
 ```{r training.Set, dependson=c("load.Data","scrub.Data","cross.Validate")}
-pred <- as.character(predict(modFit,testing))
-# cbind(as.character(testing$activity),pred)
+pred <- as.character(predict(mod.Fit,testing))
 testing$predRight <- pred==testing$activity
-# results on the testing set
+# Results on the testing set
 table(pred,testing$activity)
 ```
 
 #### Run on real test set for part 2 of assignment
 ```{r testSet, dependson=c("load.Data","scrub.Data","training.Set","cross.Validate")}
 # run on test
-predTest <- as.character(predict(modFit,tidy.dfTest))
+predTest <- as.character(predict(mod.Fit,tidy.dfTest))
 predTest
 tidy.dfTestPred <- cbind(activity=predTest,tidy.dfTest)
 tidy.dfTestPred
 ```
 
 ```{r writePredictions}
-# write answers out to submit project predictions of test set
+# write answers out for project submission
 pml_write_files(predTest)
 ```

@@ -3,7 +3,7 @@ Practical Machine Learning - Doug Needham
 # Prediction Exercise 
 ####  Practical Machine Learning Course Project
 ===================================================
-## Synopsis:
+## Astract:
 The goal of this project is to predict the manner of  unilateral dumbbell biceps curls based on data from various accelerometers on the arm,forearm, belt,  and dumbell of 6 participants. The 5 possible methods include -
 * A: Exactly according to specification
 * B: Throwing the elbows to  front
@@ -11,15 +11,13 @@ The goal of this project is to predict the manner of  unilateral dumbbell biceps
 * D: Lowering the dumbbell only halfway
 * E: Throwing the hips to the front
 
-    After scrubbing the data set to remove variables with high rate of NA values, non-accelerometer variables, and employing cross validation to eliminate highly correlated variables, the resulting model was created using 41 of the original 159 columns.
+    After scrubbing the data set to remove variables with high rate of NA values, non-accelerometer variables, and employing cross validation to eliminate highly correlated variables, the results model was created using 41 of the original 159 columns.
     Since there are a large number of variables to create the model with, a Random Forest model was selected because of its ability to handle many variables and high accuracy rate of selecting predictors.
     The out-of-bag estimate, which is the estimated error rate for future predictions in the test set was 0.77% and resulted in perfectly predicting the actual test set of 20 records that were submitted for this assignment.
     However, since Random Forests are prone to over-fit the sample, cross validation was employed to gain a more accurate estimate of what the out-of-sample error truly is for this model.
-
 #### Load libraries and set working directory
 
 ```r
-# getwd()
 setwd("~/Coursera_DataScience/ML")
 library(Hmisc)
 ```
@@ -68,9 +66,6 @@ library(caret)
 ##     cluster
 ```
 
-
-
-
 ====================================
 
 #### Load data
@@ -81,10 +76,9 @@ testDataFile <- "pml-testing.csv"
 
 init <- read.csv(trainDataFile, header = TRUE, nrows = 10000, stringsAsFactors = FALSE, na.strings = "NA", quote="")
 classes <- sapply(init,class)
-rawTrain <- read.csv(trainDataFile, colClasses=classes, header = TRUE)
-rawTest <- read.csv(testDataFile, colClasses=classes, header = TRUE)
+raw.Train <- read.csv(trainDataFile, colClasses=classes, header = TRUE)
+raw.Test <- read.csv(testDataFile, colClasses=classes, header = TRUE)
 ```
-
 #### Display the structure of the data
 
 ```
@@ -197,8 +191,8 @@ Check for NA's because they can cause issues with models.
 
 
 ```r
-nas <- format(sum(is.na(rawTrain)),big.mark=",",scientific=FALSE)
-records <- format(nrow(rawTrain),big.mark=",",scientific=FALSE)
+nas <- format(sum(is.na(raw.Train)),big.mark=",",scientific=FALSE)
+records <- format(nrow(raw.Train),big.mark=",",scientific=FALSE)
 paste("From ",records,"records, there are",nas,"incomplete records!")
 ```
 
@@ -206,35 +200,33 @@ paste("From ",records,"records, there are",nas,"incomplete records!")
 ## [1] "From  19,622 records, there are 1,287,472 incomplete records!"
 ```
 
-#### Scrub data
+#### Scrub the data
 
 Missing data, highly correlated data and any columns with values near zero are removed from the dataset since they add very little predictive value.
 
 
 ```r
 # remove unnecessary fields, and create new dataframe for transformations starting with classe column and non-accelerometer variables
-tidy.df <- rawTrain[,c(160,8:159)]
+tidy.df <- raw.Train[,c(160,8:159)]
 
-# adding activity as factor variable of classe, and then excluding classe
+# creating activity as factor variable of classe, and then excluding classe
 tidy.df$activity <- factor(tidy.df$classe)
 
-# now discarding classe character variable and putting factor activity in first column
+# rearranging columns to discard classe character variable and put factor activity in first column
 tidy.df <- tidy.df[,c(154,2:153)]
 
-# likewise removing non-accelerometer and also problem_id columns from Test set
-tidy.dfTest <- rawTest[,c(8:159)]
+# likewise removing un-needed columns
+tidy.dfTest <- raw.Test[,c(8:159)]
 
-# some of the measurements did not contain NA in data file so were converted to character.
+# some of the measurements did not contain NA in data file and were converted to character.
 maxNas <- .9*nrow(tidy.df[,])
 for(col in names(tidy.df)){
-  if(is.character(tidy.df[,col])==TRUE
-    && col %in% c("user_name","cvtd_timestamp","new_window","classe") == FALSE
-     ){
-    # Finding those and changing back to numeric.
+  if(is.character(tidy.df[,col])==TRUE && col %in% c("user_name","cvtd_timestamp","new_window","classe") == FALSE){
+    # Find and change back to numeric.
     tidy.df[,col] <- as.numeric(tidy.df[,col])
     tidy.dfTest[,col] <- as.numeric(tidy.dfTest[,col])
   }
-  # Also, remove any cols that are mostly NA altogether since not very useful for prediction
+  # Remove any cols that are mostly NA altogether.
   rowNas <- sum(is.na(tidy.df[,col]))
   if(rowNas > maxNas){
     tidy.df <- tidy.df[,-which(names(tidy.df) %in% c(col))]
@@ -282,7 +274,7 @@ for(col in names(tidy.df)){
 ```r
 # remove near zero values, if any
 nsv <- nearZeroVar(tidy.df[,2:53],saveMetrics=TRUE)
-# check if any are TRUE, which none are
+#
 nsv[,nsv$nzv==TRUE]
 ```
 
@@ -291,16 +283,14 @@ nsv[,nsv$nzv==TRUE]
 ```
 
 ```r
-# check for highly correlated predictors and remove those columns from both sets
+# check for highly correlated predictors, then remove those columns from both sets
 M = abs(cor(tidy.df[,2:53]))
 diag(M) <- 0
-corPreds <- which(M > 0.9,arr.ind=TRUE)
-for(col in unique(row.names(corPreds))){
+cor.Preds <- which(M > 0.9,arr.ind=TRUE)
+for(col in unique(row.names(cor.Preds))){
   tidy.df <- tidy.df[,-which(names(tidy.df) %in% c(col))]
   tidy.dfTest <- tidy.dfTest[,-which(names(tidy.dfTest) %in% c(col))]
 }
-
-
 summary(tidy.df)
 ```
 
@@ -385,34 +375,35 @@ summary(tidy.df)
 ```
 
 ```r
-# data should be good enough now but will check NAs one more time
+# data should be good enough now 
 ```
 
-#### Check for missing values on tidied dataset
+#### Check for missing values 
 
 ```r
 nas <- format(sum(is.na(tidy.df)),big.mark=",",scientific=FALSE)
 records <- format(nrow(tidy.df),big.mark=",",scientific=FALSE)
-paste("Of",records,"records, there are",nas,"incomplete records!")
+paste("For ",records,"records, there are",nas,"incomplete records!")
 ```
 
 ```
-## [1] "Of 19,622 records, there are 0 incomplete records!"
+## [1] "For  19,622 records, there are 0 incomplete records!"
 ```
 
-#### Build random forest model on all accelerometer variables
+#### Build random forest model on all variables
 
-The random forest model was selected because of its high accuracy rate and ability to drill down into many variables in order to identify which ones contribute most to a prediction algorithm. This resulting out-of-bag estimate of error rate was 0.77%.
+The random forest model was selected because of its high accuracy rate. It also has the ability to drill down into many variables toidentify which ones contribute most to a prediction algorithm. 
+This resulting out-of-bag estimate of error rate was 0.77%.
 
 
 ```r
-# split Training into train/test sets
+# split into train/test sets
 in.Train = createDataPartition(tidy.df$activity, p = 3/4, list=FALSE)
 training = tidy.df[in.Train,]
 testing = tidy.df[-in.Train,]
 
-# use Random Forest model due to more than 2 outcome variables
-modFit <- train(activity ~.,method="rf", data=training)
+# use Random Forest model since we have more than 2 outcome variables
+mod.Fit <- train(activity ~.,method="rf", data=training)
 ```
 
 ```
@@ -425,8 +416,8 @@ modFit <- train(activity ~.,method="rf", data=training)
 ```
 
 ```r
-finMod <- modFit$finalModel
-finMod
+fin.Mod <- mod.Fit$finalModel
+fin.Mod
 ```
 
 ```
@@ -437,18 +428,18 @@ finMod
 ##                      Number of trees: 500
 ## No. of variables tried at each split: 21
 ## 
-##         OOB estimate of  error rate: 0.75%
+##         OOB estimate of  error rate: 0.79%
 ## Confusion matrix:
 ##      A    B    C    D    E class.error
-## A 4177    5    1    0    2    0.001912
-## B   19 2822    7    0    0    0.009129
-## C    0   24 2533   10    0    0.013245
-## D    1    0   27 2381    3    0.012852
-## E    0    0    2   10 2694    0.004435
+## A 4182    1    0    1    1   0.0007168
+## B   21 2820    7    0    0   0.0098315
+## C    0   25 2532   10    0   0.0136346
+## D    3    1   33 2373    2   0.0161692
+## E    0    0    4    8 2694   0.0044346
 ```
 
 ```r
-summary(finMod)
+summary(fin.Mod)
 ```
 
 ```
@@ -478,8 +469,8 @@ summary(finMod)
 ```
 
 ```r
-# view Importance of each variable
-varImp(modFit)
+# view each variable
+varImp(mod.Fit)
 ```
 
 ```
@@ -489,157 +480,161 @@ varImp(modFit)
 ## 
 ##                      Overall
 ## yaw_belt               100.0
-## pitch_forearm           74.5
-## magnet_dumbbell_z       64.8
-## magnet_belt_y           48.7
-## magnet_dumbbell_y       47.8
-## roll_forearm            47.7
-## magnet_belt_z           31.4
-## gyros_belt_z            26.0
-## magnet_dumbbell_x       23.9
-## roll_dumbbell           23.4
-## accel_dumbbell_y        22.3
-## accel_forearm_x         18.8
-## accel_forearm_z         18.7
-## roll_arm                17.1
-## magnet_belt_x           16.6
-## total_accel_dumbbell    16.0
-## accel_dumbbell_z        15.6
-## magnet_forearm_z        15.0
-## yaw_arm                 13.0
-## yaw_dumbbell            11.5
+## pitch_forearm           74.6
+## magnet_dumbbell_z       62.4
+## magnet_belt_y           45.7
+## magnet_dumbbell_y       44.4
+## roll_forearm            42.3
+## magnet_belt_z           32.1
+## roll_dumbbell           26.1
+## gyros_belt_z            25.7
+## magnet_dumbbell_x       23.8
+## accel_dumbbell_y        21.6
+## accel_forearm_z         21.2
+## roll_arm                17.7
+## accel_forearm_x         17.3
+## magnet_belt_x           17.1
+## accel_dumbbell_z        17.0
+## magnet_forearm_z        15.7
+## total_accel_dumbbell    15.2
+## yaw_arm                 13.1
+## yaw_dumbbell            12.5
 ```
 
 ```r
-importance(finMod)
+importance(fin.Mod)
 ```
 
 ```
 ##                      MeanDecreaseGini
-## yaw_belt                      1331.74
-## gyros_belt_x                    76.16
-## gyros_belt_y                    92.09
-## gyros_belt_z                   379.67
-## magnet_belt_x                  258.89
-## magnet_belt_y                  671.76
-## magnet_belt_z                  448.19
-## roll_arm                       264.99
-## pitch_arm                      132.37
-## yaw_arm                        212.00
-## total_accel_arm                 64.19
-## gyros_arm_z                     44.68
-## accel_arm_x                    123.64
-## accel_arm_y                    133.11
-## accel_arm_z                     83.18
-## magnet_arm_x                   169.82
-## magnet_arm_y                   148.44
-## magnet_arm_z                   128.58
-## roll_dumbbell                  345.78
-## pitch_dumbbell                 112.10
-## yaw_dumbbell                   193.28
-## total_accel_dumbbell           251.14
-## gyros_dumbbell_y               186.63
-## accel_dumbbell_x               124.58
-## accel_dumbbell_y               331.28
-## accel_dumbbell_z               245.66
-## magnet_dumbbell_x              352.86
-## magnet_dumbbell_y              660.17
-## magnet_dumbbell_z              879.33
-## roll_forearm                   658.72
-## pitch_forearm                 1004.09
-## yaw_forearm                    122.50
-## total_accel_forearm             76.82
-## gyros_forearm_x                 47.15
-## gyros_forearm_y                 92.65
-## accel_forearm_x                286.75
-## accel_forearm_y                 89.12
-## accel_forearm_z                285.09
-## magnet_forearm_x               140.40
-## magnet_forearm_y               149.02
-## magnet_forearm_z               237.46
+## yaw_belt                      1340.18
+## gyros_belt_x                    75.42
+## gyros_belt_y                    94.42
+## gyros_belt_z                   377.26
+## magnet_belt_x                  264.88
+## magnet_belt_y                  636.54
+## magnet_belt_z                  460.14
+## roll_arm                       273.73
+## pitch_arm                      139.59
+## yaw_arm                        213.31
+## total_accel_arm                 67.76
+## gyros_arm_z                     43.66
+## accel_arm_x                    136.24
+## accel_arm_y                    127.10
+## accel_arm_z                     80.84
+## magnet_arm_x                   194.38
+## magnet_arm_y                   155.37
+## magnet_arm_z                   125.41
+## roll_dumbbell                  381.85
+## pitch_dumbbell                 104.09
+## yaw_dumbbell                   205.67
+## total_accel_dumbbell           241.34
+## gyros_dumbbell_y               187.50
+## accel_dumbbell_x               121.15
+## accel_dumbbell_y               323.26
+## accel_dumbbell_z               264.20
+## magnet_dumbbell_x              352.01
+## magnet_dumbbell_y              619.23
+## magnet_dumbbell_z              852.71
+## roll_forearm                   592.39
+## pitch_forearm                 1010.30
+## yaw_forearm                    120.58
+## total_accel_forearm             84.99
+## gyros_forearm_x                 47.63
+## gyros_forearm_y                107.12
+## accel_forearm_x                267.90
+## accel_forearm_y                 83.79
+## accel_forearm_z                317.88
+## magnet_forearm_x               147.14
+## magnet_forearm_y               147.69
+## magnet_forearm_z               247.26
 ```
-
-#### Perform cross validation
-
+#### Perform crossval
 Since random forests can lead to overfitting, cross validation is used to determine a better estimate the of out of sample error by running the model on smaller subsets of the training datasetThis resulted in projecting an 84% accuracy rate for out-of-bag predictions, which is quite a bit lower than the model's estimation of 99.23%.
 
-
 ```r
-# use Random Forest Cross Validation
-result <- rfcv(training[,2:41], training$activity, cv.fold=10, scale="log", step=0.5,
-     mtry=function(p) max(1, floor(sqrt(p))), recursive=FALSE)
+# use RF Cross Validation
+rfcv.result <- rfcv(training[,2:41], 
+			training$activity, 
+			cv.fold=10, 
+			scale="log", 
+			step=0.5,
+			mtry=function(p) max(1, floor(sqrt(p))), 
+			recursive=FALSE)
 
-# Plot of cross validation error results
-with(result,
-     plot(n.var, error.cv, log="x", type="o", lwd=2,
-          xlab="Number of Variables",
-          ylab="Error rates at each step",
-          main="Random Cross Validation Error Rate by number of Variables used in Model")
+# Plot of crossval error results
+with(rfcv.result,
+     plot(n.var, 
+			error.cv, 
+			log="x", 
+			type="o", 
+			lwd=2,
+            xlab="Variables",
+            ylab="Error rates for each step",
+            main="Random Cross Validation Error Rate by number of Variables used")
      )
 ```
 
 ![plot of chunk cross.Validate](figure/cross.Validate.png) 
 
 ```r
-# Average OOB estimate of error rate across 10 folds
-mean(result$error.cv)
+# mean estimate of error rate across 10 folds
+mean(rfcv.result$error.cv)
 ```
 
 ```
-## [1] 0.1345
+## [1] 0.1362
 ```
 
 ```r
-# Estimate OOB Accuracy rate based on cross validation
-1-mean(result$error.cv)
+# Estimate OOB Accuracy rate from crossval
+1-mean(rfcv.result$error.cv)
 ```
 
 ```
-## [1] 0.8655
+## [1] 0.8638
 ```
 
-#### Plots for model
-
+#### Plots 
 These plots the order of importance of the variables used in creating the model  and demonstrate the accuracy of the model.
 
 
 ```r
-plot(modFit, log="y")
+plot(mod.Fit, log="y")
 ```
 
 ![plot of chunk plots](figure/plots1.png) 
 
 ```r
-varImpPlot(finMod)
+varImpPlot(fin.Mod)
 ```
 
 ![plot of chunk plots](figure/plots2.png) 
 
-#### Run on test partition set to compare actual vs prediction
+#### Run on the test partition set for comparison
 
 ```r
-pred <- as.character(predict(modFit,testing))
-# cbind(as.character(testing$activity),pred)
+pred <- as.character(predict(mod.Fit,testing))
 testing$predRight <- pred==testing$activity
-# results on the testing set
+# Results on the testing set
 table(pred,testing$activity)
 ```
 
 ```
 ##     
 ## pred    A    B    C    D    E
-##    A 1392    9    0    0    0
-##    B    3  936    9    0    0
-##    C    0    4  841    7    3
-##    D    0    0    5  796    2
-##    E    0    0    0    1  896
+##    A 1394    9    0    0    0
+##    B    1  934    7    0    0
+##    C    0    6  846    3    2
+##    D    0    0    2  800    2
+##    E    0    0    0    1  897
 ```
 
 #### Run on real test set for part 2 of assignment
 
 ```r
 # run on test
-predTest <- as.character(predict(modFit,tidy.dfTest))
+predTest <- as.character(predict(mod.Fit,tidy.dfTest))
 predTest
 ```
 
@@ -847,6 +842,15 @@ tidy.dfTestPred
 
 
 ```r
-# write answers out to submit project predictions of test set
+# write answers out for project submission
 pml_write_files(predTest)
+```
+
+```
+## Warning: cannot open file './answers/problem_id_1.txt': No such file or
+## directory
+```
+
+```
+## Error: cannot open the connection
 ```
